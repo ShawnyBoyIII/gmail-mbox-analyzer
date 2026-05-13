@@ -1,8 +1,47 @@
 # Gmail MBOX Analyzer
 
-This project analyzes a Gmail `.mbox` export and summarizes who sends you the most mail.
+Analyze a Gmail `.mbox` export to find your highest-volume senders, likely bulk mail, and large-attachment emails so you can clean up your inbox faster.
 
-The main goal is to help identify high-volume senders that are strong deletion candidates in Gmail.
+Gmail makes it surprisingly hard to understand who is sending you the most email at scale. You can search by sender, but Gmail does not give you an easy way to see sender counts across your whole mailbox, which makes bulk cleanup slow and frustrating.
+
+This project was built to solve that problem. It analyzes a Gmail `.mbox` export and quickly shows the top senders in your mailbox, along with other patterns that help identify strong deletion candidates.
+
+The tradeoff is that you first need to request and download an `.mbox` export from Gmail through Google Takeout, which is a little painful. Once you have the file, though, the analysis runs quickly and gives you a much clearer picture of where your inbox volume is coming from.
+
+Using this approach, I personally deleted more than 20,000 emails.
+
+## Why I Built This
+
+I wanted a practical way to answer a simple question that Gmail does not answer well: who is sending me the most email?
+
+Once you know that, inbox cleanup becomes much more manageable. Instead of guessing, you can focus on:
+
+- the senders creating the most volume
+- likely newsletter and bulk-mail sources
+- attachment-heavy messages that may be worth deleting first
+
+## Sample Output
+
+```text
+Total messages scanned: 48,231
+Messages without a parseable sender: 14
+
+Top 5 senders:
+   1. deals@example.com - 2,184 messages, 2,102 likely bulk
+   2. notifications@service.com - 1,426 messages, 1,401 likely bulk
+   3. updates@shopping.com - 988 messages, 964 likely bulk
+   4. team@company.com - 312 messages, 0 likely bulk
+   5. friend@gmail.com - 205 messages, 0 likely bulk
+
+Senders with more than 100 and less than 1000 emails:
+   1. updates@shopping.com - 988 messages, search: from:updates@shopping.com
+   2. team@company.com - 312 messages, search: from:team@company.com
+   3. friend@gmail.com - 205 messages, search: from:friend@gmail.com
+
+Top 10 emails with the heaviest attachments:
+   1. reports@vendor.com - 24.40 MB across 2 attachment(s) - Quarterly report
+   2. photos@family.com - 18.12 MB across 7 attachment(s) - Vacation pictures
+```
 
 ## Safe Publishing
 
