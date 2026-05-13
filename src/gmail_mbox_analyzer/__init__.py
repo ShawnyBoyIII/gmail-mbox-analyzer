@@ -1,0 +1,1 @@
+"""Gmail MBOX analyzer package."""

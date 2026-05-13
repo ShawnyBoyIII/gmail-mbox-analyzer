@@ -1,0 +1,8 @@
+[project]
+name = "gmail-mbox-analyzer"
+version = "0.1.0"
+description = "Analyze Gmail MBOX exports and count message senders."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

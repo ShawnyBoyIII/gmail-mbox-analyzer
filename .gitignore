@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Local analysis outputs containing personal mailbox metadata
+reports/
+*.csv
+
+# Mail exports and archives
+*.mbox
+*.mbox.*
+*.pst
+*.eml
+*.zip
+*.tgz
+*.tar.gz
+
+# Environment and local secrets
+.env
+.env.*
+secrets.*
+credentials.*
