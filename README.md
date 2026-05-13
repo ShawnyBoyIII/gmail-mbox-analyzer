@@ -1,14 +1,19 @@
 # Gmail MBOX Analyzer
 
-Analyze a Gmail `.mbox` export to find your highest-volume senders, likely bulk mail, and large-attachment emails so you can clean up your inbox faster.
+Find the senders taking up the most space in your Gmail export so you can clean up your inbox faster.
+
+This CLI analyzes a Gmail `.mbox` export and surfaces:
+
+- top senders by message count
+- likely bulk and newsletter mail
+- senders with 100 to 1000 emails
+- attachment-heavy messages worth reviewing first
+
+**Personal result:** this workflow helped me delete more than 20,000 emails.
 
 Gmail makes it surprisingly hard to understand who is sending you the most email at scale. You can search by sender, but Gmail does not give you an easy way to see sender counts across your whole mailbox, which makes bulk cleanup slow and frustrating.
 
-This project was built to solve that problem. It analyzes a Gmail `.mbox` export and quickly shows the top senders in your mailbox, along with other patterns that help identify strong deletion candidates.
-
-The tradeoff is that you first need to request and download an `.mbox` export from Gmail through Google Takeout, which is a little painful. Once you have the file, though, the analysis runs quickly and gives you a much clearer picture of where your inbox volume is coming from.
-
-Using this approach, I personally deleted more than 20,000 emails.
+This project was built to solve that problem. The tradeoff is that you first need to request and download an `.mbox` export from Gmail through Google Takeout, which is a little painful. Once you have the file, the analysis runs quickly and gives you a much clearer picture of where your inbox volume is coming from.
 
 ## Why I Built This
 
