@@ -4,9 +4,10 @@ import csv
 import mailbox
 from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from email.header import decode_header, make_header
 from email.message import Message
-from email.utils import parseaddr
+from email.utils import parseaddr, parsedate_to_datetime
 from pathlib import Path
 
 
@@ -91,6 +92,8 @@ def analyze_mbox(
     *,
     exclude_domains: set[str] | None = None,
     bulk_only: bool = False,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ) -> AnalysisResult:
     exclude_domains = {domain.lower() for domain in (exclude_domains or set())}
     sender_counter: Counter[str] = Counter()
@@ -101,9 +104,28 @@ def analyze_mbox(
     total_messages = 0
     unknown_sender_count = 0
 
+    # Make sure start_date and end_date are aware
+    if start_date and start_date.tzinfo is None:
+        start_date = start_date.replace(tzinfo=timezone.utc)
+    if end_date and end_date.tzinfo is None:
+        end_date = end_date.replace(tzinfo=timezone.utc)
+
     mbox = mailbox.mbox(str(mbox_path))
     try:
         for message in mbox:
+            if start_date or end_date:
+                date_header = message.get("Date")
+                if not date_header:
+                    continue
+                try:
+                    msg_date = parsedate_to_datetime(date_header)
+                    if start_date and msg_date < start_date:
+                        continue
+                    if end_date and msg_date > end_date:
+                        continue
+                except (TypeError, ValueError):
+                    continue
+
             total_messages += 1
             sender_email, sender_name = normalize_sender(message)
             if not sender_email:
