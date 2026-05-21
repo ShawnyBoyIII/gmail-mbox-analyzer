@@ -95,31 +95,33 @@ def do_interactive_mode(result: AnalysisResult) -> None:
     print("")
 
 
-def do_search_summary(result: AnalysisResult, keyword: str) -> None:
+def render_search_summary(result: AnalysisResult, keyword: str) -> str:
     keyword = keyword.lower()
     matches = [
         r for r in result.sender_counts
         if keyword in r.sender_email.lower() or keyword in r.sender_name.lower()
     ]
 
+    lines: list[str] = []
     if not matches:
-        print(f"No senders found matching '{keyword}'.")
-        return
+        lines.append(f"No senders found matching '{keyword}'.")
+        return "\n".join(lines)
 
-    print(f"\nFound {len(matches)} senders matching '{keyword}':")
+    lines.append(f"Found {len(matches)} senders matching '{keyword}':")
     total_messages = 0
     search_parts = []
 
     for i, r in enumerate(matches, start=1):
         display_name = f" ({r.sender_name})" if r.sender_name else ""
-        print(f"  {i:>2}. {r.sender_email}{display_name} - {r.count} messages")
+        lines.append(f"  {i:>2}. {r.sender_email}{display_name} - {r.count} messages")
         total_messages += r.count
         search_parts.append(r.gmail_search)
 
-    print(f"\nTotal messages across these senders: {total_messages}")
-    print("\nGmail Search Query (copy & paste to delete):")
-    print(" OR ".join(search_parts))
-    print("")
+    lines.append("")
+    lines.append(f"Total messages across these senders: {total_messages}")
+    lines.append("Gmail Search Query (copy & paste to delete):")
+    lines.append(" OR ".join(search_parts))
+    return "\n".join(lines)
 
 
 def render_summary(result: AnalysisResult, top: int) -> str:
@@ -205,7 +207,7 @@ def main() -> int:
     if args.interactive:
         do_interactive_mode(result)
     elif args.search:
-        do_search_summary(result, args.search)
+        print(render_search_summary(result, args.search))
     else:
         print(render_summary(result, args.top))
 

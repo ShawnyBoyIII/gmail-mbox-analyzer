@@ -5,7 +5,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from src.gmail_mbox_analyzer.analyzer import AnalysisResult, SenderRecord
-from src.gmail_mbox_analyzer.cli import do_search_summary, do_interactive_mode
+from src.gmail_mbox_analyzer.cli import render_search_summary, do_interactive_mode
 
 
 class CliTests(unittest.TestCase):
@@ -24,20 +24,16 @@ class CliTests(unittest.TestCase):
             unknown_sender_count=0
         )
 
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_search_mode(self, mock_stdout):
-        do_search_summary(self.result, "uber")
-        output = mock_stdout.getvalue()
+    def test_search_mode(self):
+        output = render_search_summary(self.result, "uber")
 
         self.assertIn("Found 2 senders matching 'uber'", output)
         self.assertIn("Total messages across these senders: 70", output)
         self.assertIn("from:uber@example.com OR from:uber.eats@example.com", output)
         self.assertNotIn("lyft@example.com", output)
 
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_search_mode_no_matches(self, mock_stdout):
-        do_search_summary(self.result, "doordash")
-        output = mock_stdout.getvalue()
+    def test_search_mode_no_matches(self):
+        output = render_search_summary(self.result, "doordash")
 
         self.assertIn("No senders found matching 'doordash'", output)
 
