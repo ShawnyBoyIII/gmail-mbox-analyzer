@@ -50,7 +50,78 @@ def build_parser() -> argparse.ArgumentParser:
         type=parse_date,
         help="Optional end date for filtering messages (YYYY-MM-DD).",
     )
+    parser.add_argument(
+        "--search",
+        type=str,
+        help="Filter results by matching this keyword against sender names or emails.",
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Interactive review mode to build a bulk deletion search query.",
+    )
     return parser
+
+
+def do_interactive_mode(result: AnalysisResult) -> None:
+    print("\n--- Interactive Bulk Deletion Review ---")
+    print("Reviewing top senders. Press 'y' to add to bulk delete query, 'n' to skip, 'q' to quit.")
+
+    search_parts = []
+    total_messages_to_delete = 0
+
+    for r in result.sender_counts:
+        display_name = f" ({r.sender_name})" if r.sender_name else ""
+        prompt = f"Add {r.sender_email}{display_name} ({r.count} messages)? [y/N/q]: "
+
+        try:
+            choice = input(prompt).strip().lower()
+        except EOFError:
+            break
+
+        if choice == 'q':
+            break
+        elif choice == 'y':
+            search_parts.append(r.gmail_search)
+            total_messages_to_delete += r.count
+
+    if not search_parts:
+        print("\nNo senders selected.")
+        return
+
+    print(f"\n--- Selected for Deletion: {total_messages_to_delete} messages ---")
+    print("\nGmail Search Query (copy & paste to delete):")
+    print(" OR ".join(search_parts))
+    print("")
+
+
+def render_search_summary(result: AnalysisResult, keyword: str) -> str:
+    keyword = keyword.lower()
+    matches = [
+        r for r in result.sender_counts
+        if keyword in r.sender_email.lower() or keyword in r.sender_name.lower()
+    ]
+
+    lines: list[str] = []
+    if not matches:
+        lines.append(f"No senders found matching '{keyword}'.")
+        return "\n".join(lines)
+
+    lines.append(f"Found {len(matches)} senders matching '{keyword}':")
+    total_messages = 0
+    search_parts = []
+
+    for i, r in enumerate(matches, start=1):
+        display_name = f" ({r.sender_name})" if r.sender_name else ""
+        lines.append(f"  {i:>2}. {r.sender_email}{display_name} - {r.count} messages")
+        total_messages += r.count
+        search_parts.append(r.gmail_search)
+
+    lines.append("")
+    lines.append(f"Total messages across these senders: {total_messages}")
+    lines.append("Gmail Search Query (copy & paste to delete):")
+    lines.append(" OR ".join(search_parts))
+    return "\n".join(lines)
 
 
 def render_summary(result: AnalysisResult, top: int) -> str:
@@ -132,7 +203,13 @@ def main() -> int:
         start_date=args.start_date,
         end_date=args.end_date,
     )
-    print(render_summary(result, args.top))
+
+    if args.interactive:
+        do_interactive_mode(result)
+    elif args.search:
+        print(render_search_summary(result, args.search))
+    else:
+        print(render_summary(result, args.top))
 
     if args.output_dir:
         output_paths = write_csv_reports(result, args.output_dir)
