@@ -3,6 +3,7 @@ from __future__ import annotations
 import mailbox
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from email.header import Header
 from email.message import EmailMessage
 from pathlib import Path
@@ -114,6 +115,40 @@ class AnalyzerTests(unittest.TestCase):
         result = analyze_mbox(mbox_path)
 
         self.assertEqual(result.sender_counts[0].sender_email, "sender@example.com")
+
+    def test_date_range_filtering(self) -> None:
+        mbox_path = self.create_mbox(
+            [
+                build_message("Alice <alice@example.com>", "Before", Date="Mon, 01 Jan 2023 10:00:00 -0500"),
+                build_message("Bob <bob@example.com>", "Inside", Date="Wed, 15 Feb 2023 12:00:00 +0000"),
+                build_message("Charlie <charlie@example.com>", "After", Date="Fri, 01 Dec 2023 14:00:00 +0000"),
+                build_message("Dave <dave@example.com>", "No Date"),
+                build_message("Eve <eve@example.com>", "Bad Date", Date="Not a Date"),
+            ]
+        )
+
+        # Both start and end dates
+        start_date = datetime(2023, 2, 1, tzinfo=timezone.utc)
+        end_date = datetime(2023, 3, 1, tzinfo=timezone.utc)
+
+        result = analyze_mbox(mbox_path, start_date=start_date, end_date=end_date)
+
+        self.assertEqual(result.total_messages, 1)
+        self.assertEqual(len(result.sender_counts), 1)
+        self.assertEqual(result.sender_counts[0].sender_email, "bob@example.com")
+
+        # Only start date
+        result_start = analyze_mbox(mbox_path, start_date=start_date)
+        self.assertEqual(result_start.total_messages, 2)
+        senders = {record.sender_email for record in result_start.sender_counts}
+        self.assertEqual(senders, {"bob@example.com", "charlie@example.com"})
+
+        # Only end date
+        result_end = analyze_mbox(mbox_path, end_date=end_date)
+        self.assertEqual(result_end.total_messages, 2)
+        senders_end = {record.sender_email for record in result_end.sender_counts}
+        self.assertEqual(senders_end, {"alice@example.com", "bob@example.com"})
+
 
     def test_mid_volume_senders_and_heavy_attachments(self) -> None:
         messages = [

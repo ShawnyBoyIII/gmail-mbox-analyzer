@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 from pathlib import Path
 
 from .analyzer import AnalysisResult, analyze_mbox, write_csv_reports
+
+
+def parse_date(date_string: str) -> datetime:
+    try:
+        return datetime.fromisoformat(date_string)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid date format: '{date_string}'. Use YYYY-MM-DD.")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,6 +39,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         help="Optional directory for CSV reports.",
+    )
+    parser.add_argument(
+        "--start-date",
+        type=parse_date,
+        help="Optional start date for filtering messages (YYYY-MM-DD).",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=parse_date,
+        help="Optional end date for filtering messages (YYYY-MM-DD).",
     )
     return parser
 
@@ -111,6 +129,8 @@ def main() -> int:
         mbox_path,
         exclude_domains=set(args.exclude_domain),
         bulk_only=args.bulk_only,
+        start_date=args.start_date,
+        end_date=args.end_date,
     )
     print(render_summary(result, args.top))
 
