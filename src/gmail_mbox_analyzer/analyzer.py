@@ -202,6 +202,23 @@ def build_message_gmail_search(sender_email: str, subject: str) -> str:
     return f"from:{sender_email} has:attachment"
 
 
+def _calculate_base64_decoded_length(payload: str) -> int:
+    if not payload:
+        return 0
+
+    clean_end = payload.rstrip()
+    padding = 0
+    if clean_end.endswith("=="):
+        padding = 2
+    elif clean_end.endswith("="):
+        padding = 1
+
+    whitespace_count = payload.count("\n") + payload.count("\r") + payload.count(" ") + payload.count("\t")
+    b64_len = len(payload) - whitespace_count
+
+    return max(0, (b64_len * 3) // 4 - padding)
+
+
 def build_attachment_record(
     message: Message,
     sender_email: str,
@@ -219,9 +236,20 @@ def build_attachment_record(
         if disposition != "attachment" and not filename:
             continue
 
-        payload = part.get_payload(decode=True) or b""
+        transfer_encoding = str(part.get("Content-Transfer-Encoding", "")).lower().strip()
+        if transfer_encoding == "base64":
+            payload_str = part.get_payload()
+            if isinstance(payload_str, str):
+                part_size = _calculate_base64_decoded_length(payload_str)
+            else:
+                payload = part.get_payload(decode=True) or b""
+                part_size = len(payload)
+        else:
+            payload = part.get_payload(decode=True) or b""
+            part_size = len(payload)
+
         attachment_count += 1
-        total_attachment_bytes += len(payload)
+        total_attachment_bytes += part_size
 
     if attachment_count == 0 or total_attachment_bytes == 0:
         return None
