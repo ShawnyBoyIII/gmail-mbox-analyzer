@@ -6,6 +6,7 @@ from datetime import datetime
 from .analyzer import analyze_mbox
 from .cli import render_summary, render_search_summary
 
+
 class AnalyzerGUI:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -28,35 +29,63 @@ class AnalyzerGUI:
         input_frame.pack(fill=tk.X)
 
         # File Selection
-        ttk.Label(input_frame, text="MBOX File:").grid(row=0, column=0, sticky=tk.W, pady=2)
-        ttk.Entry(input_frame, textvariable=self.mbox_path, width=50).grid(row=0, column=1, sticky=tk.W, padx=5, pady=2)
-        ttk.Button(input_frame, text="Browse...", command=self.browse_file).grid(row=0, column=2, pady=2)
+        ttk.Label(input_frame, text="MBOX File:").grid(
+            row=0, column=0, sticky=tk.W, pady=2
+        )
+        ttk.Entry(input_frame, textvariable=self.mbox_path, width=50).grid(
+            row=0, column=1, sticky=tk.W, padx=5, pady=2
+        )
+        ttk.Button(input_frame, text="Browse...", command=self.browse_file).grid(
+            row=0, column=2, pady=2
+        )
 
         # Dates
-        ttk.Label(input_frame, text="Start Date (YYYY-MM-DD):").grid(row=1, column=0, sticky=tk.W, pady=2)
-        ttk.Entry(input_frame, textvariable=self.start_date, width=20).grid(row=1, column=1, sticky=tk.W, padx=5, pady=2)
+        ttk.Label(input_frame, text="Start Date (YYYY-MM-DD):").grid(
+            row=1, column=0, sticky=tk.W, pady=2
+        )
+        ttk.Entry(input_frame, textvariable=self.start_date, width=20).grid(
+            row=1, column=1, sticky=tk.W, padx=5, pady=2
+        )
 
-        ttk.Label(input_frame, text="End Date (YYYY-MM-DD):").grid(row=2, column=0, sticky=tk.W, pady=2)
-        ttk.Entry(input_frame, textvariable=self.end_date, width=20).grid(row=2, column=1, sticky=tk.W, padx=5, pady=2)
+        ttk.Label(input_frame, text="End Date (YYYY-MM-DD):").grid(
+            row=2, column=0, sticky=tk.W, pady=2
+        )
+        ttk.Entry(input_frame, textvariable=self.end_date, width=20).grid(
+            row=2, column=1, sticky=tk.W, padx=5, pady=2
+        )
 
         # Search
-        ttk.Label(input_frame, text="Search Keyword:").grid(row=3, column=0, sticky=tk.W, pady=2)
-        ttk.Entry(input_frame, textvariable=self.search_keyword, width=30).grid(row=3, column=1, sticky=tk.W, padx=5, pady=2)
+        ttk.Label(input_frame, text="Search Keyword:").grid(
+            row=3, column=0, sticky=tk.W, pady=2
+        )
+        ttk.Entry(input_frame, textvariable=self.search_keyword, width=30).grid(
+            row=3, column=1, sticky=tk.W, padx=5, pady=2
+        )
 
         # Exclude Domains
-        ttk.Label(input_frame, text="Exclude Domains (comma separated):").grid(row=4, column=0, sticky=tk.W, pady=2)
-        ttk.Entry(input_frame, textvariable=self.exclude_domains, width=50).grid(row=4, column=1, sticky=tk.W, padx=5, pady=2)
+        ttk.Label(input_frame, text="Exclude Domains (comma separated):").grid(
+            row=4, column=0, sticky=tk.W, pady=2
+        )
+        ttk.Entry(input_frame, textvariable=self.exclude_domains, width=50).grid(
+            row=4, column=1, sticky=tk.W, padx=5, pady=2
+        )
 
         # Options
         options_frame = ttk.Frame(input_frame)
         options_frame.grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=10)
 
         ttk.Label(options_frame, text="Top N:").pack(side=tk.LEFT)
-        ttk.Entry(options_frame, textvariable=self.top_n, width=5).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(options_frame, textvariable=self.top_n, width=5).pack(
+            side=tk.LEFT, padx=5
+        )
 
-        ttk.Checkbutton(options_frame, text="Bulk Only", variable=self.bulk_only).pack(side=tk.LEFT, padx=10)
+        ttk.Checkbutton(options_frame, text="Bulk Only", variable=self.bulk_only).pack(
+            side=tk.LEFT, padx=10
+        )
 
-        self.run_button = ttk.Button(options_frame, text="Run Analysis", command=self.start_analysis)
+        self.run_button = ttk.Button(
+            options_frame, text="Run Analysis", command=self.start_analysis
+        )
         self.run_button.pack(side=tk.LEFT, padx=20)
 
         # Bottom Frame for output
@@ -64,14 +93,19 @@ class AnalyzerGUI:
         output_frame.pack(fill=tk.BOTH, expand=True)
 
         self.text_area = tk.Text(output_frame, wrap=tk.WORD, font=("Consolas", 10))
-        scrollbar = ttk.Scrollbar(output_frame, orient=tk.VERTICAL, command=self.text_area.yview)
+        scrollbar = ttk.Scrollbar(
+            output_frame, orient=tk.VERTICAL, command=self.text_area.yview
+        )
         self.text_area.configure(yscrollcommand=scrollbar.set)
 
         self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def browse_file(self):
-        path = filedialog.askopenfilename(title="Select MBOX File", filetypes=[("MBOX Files", "*.mbox"), ("All Files", "*.*")])
+        path = filedialog.askopenfilename(
+            title="Select MBOX File",
+            filetypes=[("MBOX Files", "*.mbox"), ("All Files", "*.*")],
+        )
         if path:
             self.mbox_path.set(path)
 
@@ -92,7 +126,9 @@ class AnalyzerGUI:
 
         self.run_button.config(state=tk.DISABLED)
         self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, "Analyzing... This may take a few minutes for large files.\n")
+        self.text_area.insert(
+            tk.END, "Analyzing... This may take a few minutes for large files.\n"
+        )
 
         # Parse inputs
         try:
@@ -104,7 +140,9 @@ class AnalyzerGUI:
             return
 
         exclude_str = self.exclude_domains.get().strip()
-        exclude_domains = {d.strip() for d in exclude_str.split(",")} if exclude_str else set()
+        exclude_domains = (
+            {d.strip() for d in exclude_str.split(",")} if exclude_str else set()
+        )
 
         bulk_only = self.bulk_only.get()
         search_kw = self.search_keyword.get().strip()
@@ -113,19 +151,36 @@ class AnalyzerGUI:
         # Run in thread to not freeze GUI
         thread = threading.Thread(
             target=self.run_analysis_thread,
-            args=(mbox_path, exclude_domains, bulk_only, start_date, end_date, search_kw, top_n)
+            args=(
+                mbox_path,
+                exclude_domains,
+                bulk_only,
+                start_date,
+                end_date,
+                search_kw,
+                top_n,
+            ),
         )
         thread.daemon = True
         thread.start()
 
-    def run_analysis_thread(self, mbox_path, exclude_domains, bulk_only, start_date, end_date, search_kw, top_n):
+    def run_analysis_thread(
+        self,
+        mbox_path,
+        exclude_domains,
+        bulk_only,
+        start_date,
+        end_date,
+        search_kw,
+        top_n,
+    ):
         try:
             result = analyze_mbox(
                 mbox_path,
                 exclude_domains=exclude_domains,
                 bulk_only=bulk_only,
                 start_date=start_date,
-                end_date=end_date
+                end_date=end_date,
             )
 
             if search_kw:
@@ -150,8 +205,9 @@ class AnalyzerGUI:
 
 def launch_gui():
     root = tk.Tk()
-    app = AnalyzerGUI(root)
+    _app = AnalyzerGUI(root)
     root.mainloop()
+
 
 if __name__ == "__main__":
     launch_gui()

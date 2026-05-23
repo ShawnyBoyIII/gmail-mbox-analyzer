@@ -11,7 +11,9 @@ def parse_date(date_string: str) -> datetime:
     try:
         return datetime.fromisoformat(date_string)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"Invalid date format: '{date_string}'. Use YYYY-MM-DD.")
+        raise argparse.ArgumentTypeError(
+            f"Invalid date format: '{date_string}'. Use YYYY-MM-DD."
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -65,7 +67,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def do_interactive_mode(result: AnalysisResult) -> None:
     print("\n--- Interactive Bulk Deletion Review ---")
-    print("Reviewing top senders. Press 'y' to add to bulk delete query, 'n' to skip, 'q' to quit.")
+    print(
+        "Reviewing top senders. Press 'y' to add to bulk delete query, 'n' to skip, 'q' to quit."
+    )
 
     search_parts = []
     total_messages_to_delete = 0
@@ -79,9 +83,9 @@ def do_interactive_mode(result: AnalysisResult) -> None:
         except EOFError:
             break
 
-        if choice == 'q':
+        if choice == "q":
             break
-        elif choice == 'y':
+        elif choice == "y":
             search_parts.append(r.gmail_search)
             total_messages_to_delete += r.count
 
@@ -98,7 +102,8 @@ def do_interactive_mode(result: AnalysisResult) -> None:
 def render_search_summary(result: AnalysisResult, keyword: str) -> str:
     keyword = keyword.lower()
     matches = [
-        r for r in result.sender_counts
+        r
+        for r in result.sender_counts
         if keyword in r.sender_email.lower() or keyword in r.sender_name.lower()
     ]
 
@@ -176,14 +181,18 @@ def render_summary(result: AnalysisResult, top: int) -> str:
                 f"{subject}"
             )
 
-    bulk_candidates = [record for record in result.sender_counts if record.bulk_count > 0][: min(top, 10)]
+    bulk_candidates = [
+        record for record in result.sender_counts if record.bulk_count > 0
+    ][: min(top, 10)]
     lines.append("")
     lines.append("Suggested Gmail searches for likely cleanup:")
     if not bulk_candidates:
         lines.append("  No likely bulk senders were detected in the current results.")
     else:
         for index, record in enumerate(bulk_candidates, start=1):
-            lines.append(f"  {index:>2}. {record.gmail_search} ({record.bulk_count} likely bulk messages)")
+            lines.append(
+                f"  {index:>2}. {record.gmail_search} ({record.bulk_count} likely bulk messages)"
+            )
 
     return "\n".join(lines)
 
