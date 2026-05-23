@@ -176,7 +176,7 @@ def render_summary(result: AnalysisResult, top: int) -> str:
                 f"{subject}"
             )
 
-    bulk_candidates = [record for record in result.sender_counts if record.bulk_count > 0][: min(top, 10)]
+    bulk_candidates = result.bulk_sender_counts[: min(top, 10)]
     lines.append("")
     lines.append("Suggested Gmail searches for likely cleanup:")
     if not bulk_candidates:
