@@ -141,7 +141,8 @@ def analyze_mbox(
                 continue
 
             sender_counter[sender_email] += 1
-            sender_name_map.setdefault(sender_email, sender_name)
+            if sender_email not in sender_name_map:
+                sender_name_map[sender_email] = sender_name
             domain_counter[domain] += 1
             if bulk:
                 sender_bulk_counter[sender_email] += 1
