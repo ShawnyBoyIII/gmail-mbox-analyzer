@@ -282,17 +282,17 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
     with sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
-        for record in result.sender_counts:
-            writer.writerow(
-                [
-                    record.sender_email,
-                    record.sender_name,
-                    record.domain,
-                    record.count,
-                    record.bulk_count,
-                    record.gmail_search,
-                ]
+        writer.writerows(
+            (
+                record.sender_email,
+                record.sender_name,
+                record.domain,
+                record.count,
+                record.bulk_count,
+                record.gmail_search,
             )
+            for record in result.sender_counts
+        )
 
     with domain_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
@@ -302,32 +302,32 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
     with mid_volume_sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
-        for record in result.mid_volume_sender_counts:
-            writer.writerow(
-                [
-                    record.sender_email,
-                    record.sender_name,
-                    record.domain,
-                    record.count,
-                    record.bulk_count,
-                    record.gmail_search,
-                ]
+        writer.writerows(
+            (
+                record.sender_email,
+                record.sender_name,
+                record.domain,
+                record.count,
+                record.bulk_count,
+                record.gmail_search,
             )
+            for record in result.mid_volume_sender_counts
+        )
 
     with bulk_sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
-        for record in result.bulk_sender_counts:
-            writer.writerow(
-                [
-                    record.sender_email,
-                    record.sender_name,
-                    record.domain,
-                    record.count,
-                    record.bulk_count,
-                    record.gmail_search,
-                ]
+        writer.writerows(
+            (
+                record.sender_email,
+                record.sender_name,
+                record.domain,
+                record.count,
+                record.bulk_count,
+                record.gmail_search,
             )
+            for record in result.bulk_sender_counts
+        )
 
     with heaviest_attachment_emails_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
@@ -343,19 +343,19 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
                 "gmail_search",
             ]
         )
-        for record in result.heaviest_attachment_emails:
-            writer.writerow(
-                [
-                    record.sender_email,
-                    record.sender_name,
-                    record.subject,
-                    record.date,
-                    record.attachment_count,
-                    record.total_attachment_bytes,
-                    record.total_attachment_mb,
-                    record.gmail_search,
-                ]
+        writer.writerows(
+            (
+                record.sender_email,
+                record.sender_name,
+                record.subject,
+                record.date,
+                record.attachment_count,
+                record.total_attachment_bytes,
+                record.total_attachment_mb,
+                record.gmail_search,
             )
+            for record in result.heaviest_attachment_emails
+        )
 
     return [
         sender_counts_path,
