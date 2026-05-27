@@ -70,6 +70,7 @@ The included `.gitignore` is configured to block those files by default.
 - Flags likely bulk or newsletter mail using common headers
 - Finds the top 10 emails with the heaviest attachments
 - Exports CSV reports for spreadsheet review
+- Generates a Gmail filter import XML file to automatically Trash or Archive bulk senders
 
 ## Project Layout
 
@@ -120,6 +121,12 @@ Ignore one or more sender domains:
 python3 -m src.gmail_mbox_analyzer.cli /path/to/mail.mbox --exclude-domain gmail.com --exclude-domain google.com
 ```
 
+Generate a Gmail filter XML file to automatically Trash or Archive the top bulk senders. You can import this file into Gmail's settings:
+
+```bash
+python3 -m src.gmail_mbox_analyzer.cli /path/to/mail.mbox --export-filters ./mailFilters.xml --filter-action trash
+```
+
 ## CSV Outputs
 
 When `--output-dir` is provided, the app writes:
@@ -133,5 +140,4 @@ When `--output-dir` is provided, the app writes:
 ## Next Step Ideas
 
 - Add date-range filtering
-- Add Gmail search suggestions for bulk delete actions
 - Add interactive review mode for likely newsletters and promotions
