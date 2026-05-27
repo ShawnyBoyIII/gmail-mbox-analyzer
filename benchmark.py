@@ -3,7 +3,7 @@ import mailbox
 import tempfile
 from pathlib import Path
 from email.message import EmailMessage
-from src.gmail_mbox_analyzer.analyzer import analyze_mbox, write_csv_reports, AnalysisResult, SenderRecord, AttachmentRecord
+from src.gmail_storage_cleaner.analyzer import analyze_mbox, write_csv_reports, AnalysisResult, SenderRecord, AttachmentRecord
 
 def build_message(sender: str, subject: str) -> EmailMessage:
     message = EmailMessage()

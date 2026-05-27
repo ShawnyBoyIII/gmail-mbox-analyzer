@@ -4,8 +4,8 @@ import unittest
 from io import StringIO
 from unittest.mock import patch
 
-from src.gmail_mbox_analyzer.analyzer import AnalysisResult, SenderRecord
-from src.gmail_mbox_analyzer.cli import render_search_summary, do_interactive_mode
+from src.gmail_storage_cleaner.analyzer import AnalysisResult, SenderRecord
+from src.gmail_storage_cleaner.cli import render_search_summary, do_interactive_mode
 
 
 class CliTests(unittest.TestCase):

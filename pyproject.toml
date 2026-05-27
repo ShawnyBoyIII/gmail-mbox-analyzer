@@ -1,5 +1,5 @@
 [project]
-name = "gmail-mbox-analyzer"
+name = "gmail-storage-cleaner"
 version = "0.1.0"
 description = "Analyze Gmail MBOX exports and count message senders."
 requires-python = ">=3.11"

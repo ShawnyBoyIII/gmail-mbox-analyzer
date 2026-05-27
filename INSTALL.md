@@ -18,7 +18,7 @@ Your Mac needs a free program called Python to run this app.
 
 ## 3. Download This App
 1. On this project's webpage (likely GitHub), look for a green **Code** button and click **Download ZIP**.
-2. Double-click the downloaded ZIP file to extract it. It will create a folder (e.g., `gmail-mbox-analyzer-main`).
+2. Double-click the downloaded ZIP file to extract it. It will create a folder (e.g., `gmail-storage-cleaner-main`).
 3. Move this folder somewhere easy to find, like your **Desktop**.
 
 ## 4. Run the App
@@ -27,12 +27,12 @@ Now, let's open the app!
 1. Open the **Terminal** app on your Mac. (You can find it by pressing `Command + Space`, typing "Terminal", and pressing Enter).
 2. Tell the Terminal to go to the folder you downloaded by typing `cd ` (with a space at the end), then drag and drop the folder from your Desktop directly into the Terminal window. It should look something like this:
    ```bash
-   cd /Users/yourname/Desktop/gmail-mbox-analyzer-main
+   cd /Users/yourname/Desktop/gmail-storage-cleaner-main
    ```
 3. Press **Enter**.
 4. Finally, type the following command and press **Enter**:
    ```bash
-   python3 -m src.gmail_mbox_analyzer
+   python3 -m src.gmail_storage_cleaner
    ```
 
 A simple window will pop up! From there, you can click **Browse...** to select your `.mbox` file and click **Run Analysis**.

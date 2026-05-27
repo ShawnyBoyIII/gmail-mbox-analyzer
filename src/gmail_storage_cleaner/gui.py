@@ -9,7 +9,7 @@ from .cli import render_summary, render_search_summary
 class AnalyzerGUI:
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Gmail MBOX Analyzer")
+        self.root.title("Gmail Storage Cleaner")
         self.root.geometry("800x600")
 
         self.mbox_path = tk.StringVar()
