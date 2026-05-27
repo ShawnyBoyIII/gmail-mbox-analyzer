@@ -147,18 +147,29 @@ def analyze_mbox(
             if bulk:
                 sender_bulk_counter[sender_email] += 1
 
-            attachment_record = build_attachment_record(message, sender_email, sender_name)
+            attachment_record = build_attachment_record(
+                message, sender_email, sender_name
+            )
             if attachment_record is not None:
                 heaviest_attachment_emails.append(attachment_record)
     finally:
         mbox.close()
 
-    sender_records = build_sender_records(sender_counter, sender_name_map, sender_bulk_counter)
-    mid_volume_sender_records = [record for record in sender_records if 100 < record.count < 1000]
+    sender_records = build_sender_records(
+        sender_counter, sender_name_map, sender_bulk_counter
+    )
+    mid_volume_sender_records = [
+        record for record in sender_records if 100 < record.count < 1000
+    ]
     bulk_sender_records = [record for record in sender_records if record.bulk_count > 0]
     domain_counts = sorted(domain_counter.items(), key=lambda item: (-item[1], item[0]))
     heaviest_attachment_emails.sort(
-        key=lambda record: (-record.total_attachment_bytes, -record.attachment_count, record.sender_email, record.subject)
+        key=lambda record: (
+            -record.total_attachment_bytes,
+            -record.attachment_count,
+            record.sender_email,
+            record.subject,
+        )
     )
 
     return AnalysisResult(
@@ -214,7 +225,12 @@ def _calculate_base64_decoded_length(payload: str) -> int:
     elif clean_end.endswith("="):
         padding = 1
 
-    whitespace_count = payload.count("\n") + payload.count("\r") + payload.count(" ") + payload.count("\t")
+    whitespace_count = (
+        payload.count("\n")
+        + payload.count("\r")
+        + payload.count(" ")
+        + payload.count("\t")
+    )
     b64_len = len(payload) - whitespace_count
 
     return max(0, (b64_len * 3) // 4 - padding)
@@ -237,7 +253,9 @@ def build_attachment_record(
         if disposition != "attachment" and not filename:
             continue
 
-        transfer_encoding = str(part.get("Content-Transfer-Encoding", "")).lower().strip()
+        transfer_encoding = (
+            str(part.get("Content-Transfer-Encoding", "")).lower().strip()
+        )
         if transfer_encoding == "base64":
             payload_str = part.get_payload()
             if isinstance(payload_str, str):
@@ -281,7 +299,16 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
 
     with sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
+        writer.writerow(
+            [
+                "sender_email",
+                "sender_name",
+                "domain",
+                "count",
+                "bulk_count",
+                "gmail_search",
+            ]
+        )
         writer.writerows(
             (
                 record.sender_email,
@@ -299,9 +326,20 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
         writer.writerow(["domain", "count"])
         writer.writerows(result.domain_counts)
 
-    with mid_volume_sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
+    with mid_volume_sender_counts_path.open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
         writer = csv.writer(handle)
-        writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
+        writer.writerow(
+            [
+                "sender_email",
+                "sender_name",
+                "domain",
+                "count",
+                "bulk_count",
+                "gmail_search",
+            ]
+        )
         writer.writerows(
             (
                 record.sender_email,
@@ -316,7 +354,16 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
 
     with bulk_sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
+        writer.writerow(
+            [
+                "sender_email",
+                "sender_name",
+                "domain",
+                "count",
+                "bulk_count",
+                "gmail_search",
+            ]
+        )
         writer.writerows(
             (
                 record.sender_email,
@@ -329,7 +376,9 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
             for record in result.bulk_sender_counts
         )
 
-    with heaviest_attachment_emails_path.open("w", newline="", encoding="utf-8") as handle:
+    with heaviest_attachment_emails_path.open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
         writer = csv.writer(handle)
         writer.writerow(
             [
