@@ -22,7 +22,9 @@ def build_message(sender: str, subject: str, **headers: str) -> EmailMessage:
     return message
 
 
-def build_message_with_attachment(sender: str, subject: str, attachment_bytes: bytes) -> EmailMessage:
+def build_message_with_attachment(
+    sender: str, subject: str, attachment_bytes: bytes
+) -> EmailMessage:
     message = build_message(sender, subject)
     message.add_attachment(
         attachment_bytes,
@@ -48,7 +50,11 @@ class AnalyzerTests(unittest.TestCase):
     def test_counts_senders_and_bulk_headers(self) -> None:
         mbox_path = self.create_mbox(
             [
-                build_message("News <news@example.com>", "A", **{"List-Unsubscribe": "<mailto:bye@example.com>"}),
+                build_message(
+                    "News <news@example.com>",
+                    "A",
+                    **{"List-Unsubscribe": "<mailto:bye@example.com>"},
+                ),
                 build_message("News <news@example.com>", "B"),
                 build_message("Store <sales@shop.com>", "C", Precedence="bulk"),
                 build_message("Friend <pal@gmail.com>", "D"),
@@ -71,7 +77,9 @@ class AnalyzerTests(unittest.TestCase):
     def test_bulk_only_filters_non_bulk_messages(self) -> None:
         mbox_path = self.create_mbox(
             [
-                build_message("News <news@example.com>", "A", **{"List-Id": "list.example.com"}),
+                build_message(
+                    "News <news@example.com>", "A", **{"List-Id": "list.example.com"}
+                ),
                 build_message("Friend <pal@gmail.com>", "B"),
             ]
         )
@@ -119,9 +127,21 @@ class AnalyzerTests(unittest.TestCase):
     def test_date_range_filtering(self) -> None:
         mbox_path = self.create_mbox(
             [
-                build_message("Alice <alice@example.com>", "Before", Date="Mon, 01 Jan 2023 10:00:00 -0500"),
-                build_message("Bob <bob@example.com>", "Inside", Date="Wed, 15 Feb 2023 12:00:00 +0000"),
-                build_message("Charlie <charlie@example.com>", "After", Date="Fri, 01 Dec 2023 14:00:00 +0000"),
+                build_message(
+                    "Alice <alice@example.com>",
+                    "Before",
+                    Date="Mon, 01 Jan 2023 10:00:00 -0500",
+                ),
+                build_message(
+                    "Bob <bob@example.com>",
+                    "Inside",
+                    Date="Wed, 15 Feb 2023 12:00:00 +0000",
+                ),
+                build_message(
+                    "Charlie <charlie@example.com>",
+                    "After",
+                    Date="Fri, 01 Dec 2023 14:00:00 +0000",
+                ),
                 build_message("Dave <dave@example.com>", "No Date"),
                 build_message("Eve <eve@example.com>", "Bad Date", Date="Not a Date"),
             ]
@@ -149,7 +169,6 @@ class AnalyzerTests(unittest.TestCase):
         senders_end = {record.sender_email for record in result_end.sender_counts}
         self.assertEqual(senders_end, {"alice@example.com", "bob@example.com"})
 
-
     def test_mid_volume_senders_and_heavy_attachments(self) -> None:
         messages = [
             build_message("Big Sender <big@example.com>", f"Message {index}")
@@ -157,9 +176,15 @@ class AnalyzerTests(unittest.TestCase):
         ]
         messages.extend(
             [
-                build_message_with_attachment("Attach <attach@example.com>", "Small attachment", b"a" * 512),
-                build_message_with_attachment("Attach <attach@example.com>", "Large attachment", b"a" * 4096),
-                build_message_with_attachment("Other <other@example.com>", "Medium attachment", b"a" * 2048),
+                build_message_with_attachment(
+                    "Attach <attach@example.com>", "Small attachment", b"a" * 512
+                ),
+                build_message_with_attachment(
+                    "Attach <attach@example.com>", "Large attachment", b"a" * 4096
+                ),
+                build_message_with_attachment(
+                    "Other <other@example.com>", "Medium attachment", b"a" * 2048
+                ),
             ]
         )
 
@@ -167,10 +192,16 @@ class AnalyzerTests(unittest.TestCase):
         result = analyze_mbox(mbox_path)
 
         self.assertEqual(len(result.mid_volume_sender_counts), 1)
-        self.assertEqual(result.mid_volume_sender_counts[0].sender_email, "big@example.com")
+        self.assertEqual(
+            result.mid_volume_sender_counts[0].sender_email, "big@example.com"
+        )
         self.assertEqual(result.mid_volume_sender_counts[0].count, 150)
-        self.assertEqual(result.heaviest_attachment_emails[0].subject, "Large attachment")
-        self.assertEqual(result.heaviest_attachment_emails[0].sender_email, "attach@example.com")
+        self.assertEqual(
+            result.heaviest_attachment_emails[0].subject, "Large attachment"
+        )
+        self.assertEqual(
+            result.heaviest_attachment_emails[0].sender_email, "attach@example.com"
+        )
 
 
 if __name__ == "__main__":
