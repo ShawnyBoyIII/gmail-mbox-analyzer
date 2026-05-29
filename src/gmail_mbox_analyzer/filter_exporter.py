@@ -1,6 +1,6 @@
 from typing import List, Literal
-import xml.etree.ElementTree as ET
-from xml.dom import minidom
+import xml.etree.ElementTree as ET # nosec B405
+import defusedxml.minidom as Dminidom
 
 
 def generate_gmail_filters_xml(
@@ -44,7 +44,7 @@ def generate_gmail_filters_xml(
 
     # Pretty print
     rough_string = ET.tostring(feed, "utf-8")
-    reparsed = minidom.parseString(rough_string)
+    reparsed = Dminidom.parseString(rough_string)
 
     # We remove the xml declaration <?xml version="1.0" ?> to match typical Google exports,
     # but it's valid with it too. We will keep the default minidom output which includes it.

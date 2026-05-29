@@ -1,5 +1,5 @@
 import unittest
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as DET
 from src.gmail_mbox_analyzer.filter_exporter import generate_gmail_filters_xml
 
 
@@ -15,7 +15,7 @@ class TestFilterExporter(unittest.TestCase):
         self.assertNotIn('name="shouldArchive"', xml_str)
 
         # Parse the XML to ensure it's valid
-        root = ET.fromstring(xml_str)
+        root = DET.fromstring(xml_str)
 
         # Check namespaces
         self.assertEqual(root.tag, "{http://www.w3.org/2005/Atom}feed")
@@ -37,7 +37,7 @@ class TestFilterExporter(unittest.TestCase):
         self.assertIn('name="shouldArchive" value="true"', xml_str)
         self.assertNotIn('name="shouldTrash"', xml_str)
 
-        root = ET.fromstring(xml_str)
+        root = DET.fromstring(xml_str)
         entries = root.findall("{http://www.w3.org/2005/Atom}entry")
         self.assertEqual(len(entries), 1)
 
@@ -47,7 +47,7 @@ class TestFilterExporter(unittest.TestCase):
 
     def test_empty_emails(self):
         xml_str = generate_gmail_filters_xml([])
-        root = ET.fromstring(xml_str)
+        root = DET.fromstring(xml_str)
         entries = root.findall("{http://www.w3.org/2005/Atom}entry")
         self.assertEqual(len(entries), 0)
 
