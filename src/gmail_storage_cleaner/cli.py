@@ -5,13 +5,16 @@ from datetime import datetime
 from pathlib import Path
 
 from .analyzer import AnalysisResult, analyze_mbox, write_csv_reports
+from .filter_exporter import generate_gmail_filters_xml
 
 
 def parse_date(date_string: str) -> datetime:
     try:
         return datetime.fromisoformat(date_string)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"Invalid date format: '{date_string}'. Use YYYY-MM-DD.")
+        raise argparse.ArgumentTypeError(
+            f"Invalid date format: '{date_string}'. Use YYYY-MM-DD."
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -60,12 +63,26 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Interactive review mode to build a bulk deletion search query.",
     )
+    parser.add_argument(
+        "--export-filters",
+        type=str,
+        help="Path to save a generated Gmail XML filter file for the top bulk senders.",
+    )
+    parser.add_argument(
+        "--filter-action",
+        type=str,
+        choices=["trash", "archive"],
+        default="trash",
+        help="Action to take in the generated Gmail filters (default: trash).",
+    )
     return parser
 
 
 def do_interactive_mode(result: AnalysisResult) -> None:
     print("\n--- Interactive Bulk Deletion Review ---")
-    print("Reviewing top senders. Press 'y' to add to bulk delete query, 'n' to skip, 'q' to quit.")
+    print(
+        "Reviewing top senders. Press 'y' to add to bulk delete query, 'n' to skip, 'q' to quit."
+    )
 
     search_parts = []
     total_messages_to_delete = 0
@@ -79,9 +96,9 @@ def do_interactive_mode(result: AnalysisResult) -> None:
         except EOFError:
             break
 
-        if choice == 'q':
+        if choice == "q":
             break
-        elif choice == 'y':
+        elif choice == "y":
             search_parts.append(r.gmail_search)
             total_messages_to_delete += r.count
 
@@ -98,7 +115,8 @@ def do_interactive_mode(result: AnalysisResult) -> None:
 def render_search_summary(result: AnalysisResult, keyword: str) -> str:
     keyword = keyword.lower()
     matches = [
-        r for r in result.sender_counts
+        r
+        for r in result.sender_counts
         if keyword in r.sender_email.lower() or keyword in r.sender_name.lower()
     ]
 
@@ -183,7 +201,9 @@ def render_summary(result: AnalysisResult, top: int) -> str:
         lines.append("  No likely bulk senders were detected in the current results.")
     else:
         for index, record in enumerate(bulk_candidates, start=1):
-            lines.append(f"  {index:>2}. {record.gmail_search} ({record.bulk_count} likely bulk messages)")
+            lines.append(
+                f"  {index:>2}. {record.gmail_search} ({record.bulk_count} likely bulk messages)"
+            )
 
     return "\n".join(lines)
 
@@ -217,6 +237,21 @@ def main() -> int:
         print("CSV reports written:")
         for path in output_paths:
             print(f"  - {path}")
+
+    if args.export_filters:
+        # Take the top bulk senders up to `args.top`
+        bulk_candidates = result.bulk_sender_counts[: min(args.top, 50)]
+        emails = [r.sender_email for r in bulk_candidates if r.sender_email]
+
+        if not emails:
+            print("\nNo likely bulk senders found to export as filters.")
+        else:
+            xml_content = generate_gmail_filters_xml(emails, args.filter_action)
+            out_path = Path(args.export_filters)
+            out_path.write_text(xml_content, encoding="utf-8")
+            print(
+                f"\nExported Gmail XML filters for {len(emails)} bulk senders to {out_path}"
+            )
 
     return 0
 
