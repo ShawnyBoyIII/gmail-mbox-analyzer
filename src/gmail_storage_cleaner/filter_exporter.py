@@ -36,13 +36,9 @@ def generate_gmail_filters_xml(
 
         # Filter action
         if action == "trash":
-            ET.SubElement(
-                entry, "apps:property", name="shouldTrash", value="true"
-            )
+            ET.SubElement(entry, "apps:property", name="shouldTrash", value="true")
         elif action == "archive":
-            ET.SubElement(
-                entry, "apps:property", name="shouldArchive", value="true"
-            )
+            ET.SubElement(entry, "apps:property", name="shouldArchive", value="true")
 
     # Pretty print
     rough_string = ET.tostring(feed, "utf-8")
