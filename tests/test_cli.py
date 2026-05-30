@@ -113,7 +113,7 @@ class CliTests(unittest.TestCase):
             "--bulk-only",
             "--exclude-domain", "example.com",
             "--exclude-domain", "test.com",
-            "--output-dir", "/tmp/output",
+            "--output-dir", "/tmp/output",  # nosec B108
             "--start-date", "2023-01-01",
             "--end-date", "2023-12-31",
             "--search", "uber",
@@ -124,7 +124,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.top, 50)
         self.assertTrue(args.bulk_only)
         self.assertEqual(args.exclude_domain, ["example.com", "test.com"])
-        self.assertEqual(args.output_dir, "/tmp/output")
+        self.assertEqual(args.output_dir, "/tmp/output")  # nosec B108
         self.assertEqual(args.start_date, datetime(2023, 1, 1))
         self.assertEqual(args.end_date, datetime(2023, 12, 31))
         self.assertEqual(args.search, "uber")
