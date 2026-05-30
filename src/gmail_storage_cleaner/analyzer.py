@@ -246,8 +246,12 @@ def analyze_mbox(
         mbox.close()
 
     sender_records = build_sender_records(
-        sender_counter, sender_name_map, sender_bulk_counter
+        sender_counter, sender_name_map, sender_bulk_counter, sender_date_map
     )
+
+    for record in sender_records:
+        category_counts[record.category] += record.count
+
     mid_volume_sender_records = [
         record for record in sender_records if 100 < record.count < 1000
     ]
