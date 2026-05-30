@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Analyze Gmail MBOX exports and count message senders."
 requires-python = ">=3.11"
 dependencies = [
-    "defusedxml>=0.7.1",
+    "defusedxml"
 ]
 
 [tool.pytest.ini_options]

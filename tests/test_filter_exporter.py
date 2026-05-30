@@ -1,5 +1,5 @@
 import unittest
-import defusedxml.ElementTree as DET
+import defusedxml.ElementTree as ET
 from src.gmail_mbox_analyzer.filter_exporter import generate_gmail_filters_xml
 
 
