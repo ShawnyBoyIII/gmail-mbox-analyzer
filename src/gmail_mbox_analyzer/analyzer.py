@@ -19,6 +19,8 @@ class SenderRecord:
     count: int
     bulk_count: int
     gmail_search: str
+    last_email_date: datetime | None = None
+    category: str = "Uncategorized"
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,8 @@ class AnalysisResult:
     bulk_sender_counts: list[SenderRecord]
     heaviest_attachment_emails: list[AttachmentRecord]
     unknown_sender_count: int
+    total_attachment_bytes: int = 0
+    category_counts: dict[str, int] = None
 
 
 def normalize_sender(message: Message) -> tuple[str, str]:
@@ -87,6 +91,74 @@ def is_likely_bulk(message: Message) -> bool:
     return False
 
 
+def guess_category(email: str, name: str) -> str:
+    email_lower = email.lower()
+    name_lower = name.lower()
+
+    # Finance
+    if any(
+        k in email_lower
+        for k in ["bank", "chase", "paypal", "venmo", "stripe", "mint", "robinhood"]
+    ):
+        return "Finance"
+
+    # Shopping
+    if any(
+        k in email_lower
+        for k in [
+            "amazon",
+            "ebay",
+            "walmart",
+            "target",
+            "etsy",
+            "order",
+            "receipt",
+            "shipping",
+        ]
+    ):
+        return "Shopping"
+
+    # Social
+    if any(
+        k in email_lower
+        for k in [
+            "facebook",
+            "twitter",
+            "linkedin",
+            "instagram",
+            "tiktok",
+            "pinterest",
+            "reddit",
+        ]
+    ):
+        return "Social"
+
+    # Travel
+    if any(
+        k in email_lower
+        for k in [
+            "airlines",
+            "booking",
+            "expedia",
+            "airbnb",
+            "uber",
+            "lyft",
+            "flight",
+            "hotel",
+        ]
+    ):
+        return "Travel"
+
+    # News / Newsletter
+    if any(
+        k in email_lower or k in name_lower
+        for k in ["news", "newsletter", "digest", "substack", "medium"]
+    ):
+        return "News"
+
+    return "Uncategorized"
+
+
 def analyze_mbox(
     mbox_path: str | Path,
     *,
@@ -100,9 +172,12 @@ def analyze_mbox(
     sender_name_map: dict[str, str] = {}
     sender_bulk_counter: Counter[str] = Counter()
     domain_counter: Counter[str] = Counter()
+    sender_date_map: dict[str, datetime] = {}
     heaviest_attachment_emails: list[AttachmentRecord] = []
     total_messages = 0
     unknown_sender_count = 0
+    total_attachment_bytes = 0
+    category_counts: Counter[str] = Counter()
 
     # Make sure start_date and end_date are aware
     if start_date and start_date.tzinfo is None:
@@ -113,17 +188,22 @@ def analyze_mbox(
     mbox = mailbox.mbox(str(mbox_path))
     try:
         for message in mbox:
-            if start_date or end_date:
-                date_header = message.get("Date")
-                if not date_header:
-                    continue
+            date_header = message.get("Date")
+            msg_date = None
+            if date_header:
                 try:
                     msg_date = parsedate_to_datetime(date_header)
-                    if start_date and msg_date < start_date:
-                        continue
-                    if end_date and msg_date > end_date:
-                        continue
+                    if msg_date.tzinfo is None:
+                        msg_date = msg_date.replace(tzinfo=timezone.utc)
                 except (TypeError, ValueError):
+                    pass
+
+            if start_date or end_date:
+                if not msg_date:
+                    continue
+                if start_date and msg_date < start_date:
+                    continue
+                if end_date and msg_date > end_date:
                     continue
 
             total_messages += 1
@@ -143,22 +223,47 @@ def analyze_mbox(
             sender_counter[sender_email] += 1
             if sender_email not in sender_name_map:
                 sender_name_map[sender_email] = sender_name
+
+            # Update last email date
+            if msg_date:
+                if (
+                    sender_email not in sender_date_map
+                    or msg_date > sender_date_map[sender_email]
+                ):
+                    sender_date_map[sender_email] = msg_date
+
             domain_counter[domain] += 1
             if bulk:
                 sender_bulk_counter[sender_email] += 1
 
-            attachment_record = build_attachment_record(message, sender_email, sender_name)
+            attachment_record = build_attachment_record(
+                message, sender_email, sender_name
+            )
             if attachment_record is not None:
                 heaviest_attachment_emails.append(attachment_record)
+                total_attachment_bytes += attachment_record.total_attachment_bytes
     finally:
         mbox.close()
 
-    sender_records = build_sender_records(sender_counter, sender_name_map, sender_bulk_counter)
-    mid_volume_sender_records = [record for record in sender_records if 100 < record.count < 1000]
+    sender_records = build_sender_records(
+        sender_counter, sender_name_map, sender_bulk_counter, sender_date_map
+    )
+
+    for record in sender_records:
+        category_counts[record.category] += record.count
+
+    mid_volume_sender_records = [
+        record for record in sender_records if 100 < record.count < 1000
+    ]
     bulk_sender_records = [record for record in sender_records if record.bulk_count > 0]
     domain_counts = sorted(domain_counter.items(), key=lambda item: (-item[1], item[0]))
     heaviest_attachment_emails.sort(
-        key=lambda record: (-record.total_attachment_bytes, -record.attachment_count, record.sender_email, record.subject)
+        key=lambda record: (
+            -record.total_attachment_bytes,
+            -record.attachment_count,
+            record.sender_email,
+            record.subject,
+        )
     )
 
     return AnalysisResult(
@@ -169,6 +274,8 @@ def analyze_mbox(
         bulk_sender_counts=bulk_sender_records,
         heaviest_attachment_emails=heaviest_attachment_emails[:10],
         unknown_sender_count=unknown_sender_count,
+        total_attachment_bytes=total_attachment_bytes,
+        category_counts=dict(category_counts),
     )
 
 
@@ -176,17 +283,21 @@ def build_sender_records(
     sender_counter: Counter[str],
     sender_name_map: dict[str, str],
     sender_bulk_counter: Counter[str],
+    sender_date_map: dict[str, datetime],
 ) -> list[SenderRecord]:
     records: list[SenderRecord] = []
     for sender_email, count in sender_counter.items():
+        name = sender_name_map.get(sender_email, "")
         records.append(
             SenderRecord(
                 sender_email=sender_email,
-                sender_name=sender_name_map.get(sender_email, ""),
+                sender_name=name,
                 domain=extract_domain(sender_email),
                 count=count,
                 bulk_count=sender_bulk_counter.get(sender_email, 0),
                 gmail_search=build_gmail_search(sender_email),
+                last_email_date=sender_date_map.get(sender_email),
+                category=guess_category(sender_email, name),
             )
         )
     return sorted(records, key=lambda record: (-record.count, record.sender_email))
@@ -214,7 +325,12 @@ def _calculate_base64_decoded_length(payload: str) -> int:
     elif clean_end.endswith("="):
         padding = 1
 
-    whitespace_count = payload.count("\n") + payload.count("\r") + payload.count(" ") + payload.count("\t")
+    whitespace_count = (
+        payload.count("\n")
+        + payload.count("\r")
+        + payload.count(" ")
+        + payload.count("\t")
+    )
     b64_len = len(payload) - whitespace_count
 
     return max(0, (b64_len * 3) // 4 - padding)
@@ -237,7 +353,9 @@ def build_attachment_record(
         if disposition != "attachment" and not filename:
             continue
 
-        transfer_encoding = str(part.get("Content-Transfer-Encoding", "")).lower().strip()
+        transfer_encoding = (
+            str(part.get("Content-Transfer-Encoding", "")).lower().strip()
+        )
         if transfer_encoding == "base64":
             payload_str = part.get_payload()
             if isinstance(payload_str, str):
@@ -281,7 +399,16 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
 
     with sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
+        writer.writerow(
+            [
+                "sender_email",
+                "sender_name",
+                "domain",
+                "count",
+                "bulk_count",
+                "gmail_search",
+            ]
+        )
         writer.writerows(
             (
                 record.sender_email,
@@ -299,9 +426,20 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
         writer.writerow(["domain", "count"])
         writer.writerows(result.domain_counts)
 
-    with mid_volume_sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
+    with mid_volume_sender_counts_path.open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
         writer = csv.writer(handle)
-        writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
+        writer.writerow(
+            [
+                "sender_email",
+                "sender_name",
+                "domain",
+                "count",
+                "bulk_count",
+                "gmail_search",
+            ]
+        )
         writer.writerows(
             (
                 record.sender_email,
@@ -316,7 +454,16 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
 
     with bulk_sender_counts_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["sender_email", "sender_name", "domain", "count", "bulk_count", "gmail_search"])
+        writer.writerow(
+            [
+                "sender_email",
+                "sender_name",
+                "domain",
+                "count",
+                "bulk_count",
+                "gmail_search",
+            ]
+        )
         writer.writerows(
             (
                 record.sender_email,
@@ -329,7 +476,9 @@ def write_csv_reports(result: AnalysisResult, output_dir: str | Path) -> list[Pa
             for record in result.bulk_sender_counts
         )
 
-    with heaviest_attachment_emails_path.open("w", newline="", encoding="utf-8") as handle:
+    with heaviest_attachment_emails_path.open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
         writer = csv.writer(handle)
         writer.writerow(
             [
