@@ -4,6 +4,7 @@ import threading
 from datetime import datetime, timezone, timedelta
 
 from .analyzer import analyze_mbox
+from .cli import render_summary, render_search_summary
 from .filter_exporter import generate_gmail_filters_xml
 
 
@@ -21,7 +22,6 @@ class AnalyzerGUI:
         self.top_n = tk.IntVar(value=20)
         self.bulk_only = tk.BooleanVar(value=False)
         self.filter_action = tk.StringVar(value="trash")
-        self.inactive_only = tk.BooleanVar(value=False)
 
         self.last_analysis_result = None
 
@@ -87,10 +87,6 @@ class AnalyzerGUI:
             side=tk.LEFT, padx=10
         )
 
-        ttk.Checkbutton(
-            options_frame, text="Inactive Senders (>1 yr)", variable=self.inactive_only
-        ).pack(side=tk.LEFT, padx=10)
-
         self.run_button = ttk.Button(
             options_frame, text="Run Analysis", command=self.start_analysis
         )
@@ -117,55 +113,15 @@ class AnalyzerGUI:
         )
         self.export_button.pack(side=tk.LEFT, padx=10)
 
-        self.generate_search_button = ttk.Button(
-            export_frame,
-            text="Generate Search for Selected",
-            command=self.generate_search_for_selected,
-            state=tk.DISABLED,
-        )
-        self.generate_search_button.pack(side=tk.LEFT, padx=10)
-
-        # Summary Frame (Health Score)
-        self.summary_frame = ttk.Frame(self.root, padding="10")
-        self.summary_frame.pack(fill=tk.X)
-        self.summary_label = ttk.Label(
-            self.summary_frame,
-            text="Ready to analyze your inbox.",
-            font=("Helvetica", 11),
-        )
-        self.summary_label.pack(side=tk.LEFT)
-
         # Bottom Frame for output
         output_frame = ttk.Frame(self.root, padding="10")
         output_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Create Treeview
-        columns = ("name", "email", "count", "bulk", "date", "category")
-        self.tree = ttk.Treeview(
-            output_frame, columns=columns, show="headings", selectmode="extended"
-        )
-
-        # Define headings
-        self.tree.heading("name", text="Sender Name")
-        self.tree.heading("email", text="Email Address")
-        self.tree.heading("count", text="Message Count")
-        self.tree.heading("bulk", text="Likely Bulk")
-        self.tree.heading("date", text="Last Email")
-        self.tree.heading("category", text="Category")
-
-        # Define columns
-        self.tree.column("name", width=150, anchor=tk.W)
-        self.tree.column("email", width=200, anchor=tk.W)
-        self.tree.column("count", width=100, anchor=tk.E)
-        self.tree.column("bulk", width=100, anchor=tk.E)
-        self.tree.column("date", width=100, anchor=tk.W)
-        self.tree.column("category", width=100, anchor=tk.W)
-
-        # Scrollbar for Treeview
+        self.text_area = tk.Text(output_frame, wrap=tk.WORD, font=("Consolas", 10))
         scrollbar = ttk.Scrollbar(
-            output_frame, orient=tk.VERTICAL, command=self.tree.yview
+            output_frame, orient=tk.VERTICAL, command=self.text_area.yview
         )
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        self.text_area.configure(yscrollcommand=scrollbar.set)
 
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -194,12 +150,9 @@ class AnalyzerGUI:
             return
 
         self.run_button.config(state=tk.DISABLED)
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-
-        # Update summary text
-        self.summary_label.config(
-            text="Analyzing... This may take a few minutes for large files."
+        self.text_area.delete(1.0, tk.END)
+        self.text_area.insert(
+            tk.END, "Analyzing... This may take a few minutes for large files.\n"
         )
 
         # Parse inputs
@@ -259,143 +212,21 @@ class AnalyzerGUI:
                 end_date=end_date,
             )
 
-            self.root.after(0, self.display_results, result, top_n, search_kw)
+            if search_kw:
+                output = render_search_summary(result, search_kw)
+            else:
+                output = render_summary(result, top_n)
+
+            self.root.after(0, self.display_results, result, output)
         except Exception as e:
             self.root.after(0, self.display_error, str(e))
 
-    def display_results(self, result, top_n: int, search_kw: str):
+    def display_results(self, result, output: str):
         self.last_analysis_result = result
-
-        # Clear existing items
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-
-        # Calculate Health Score Summary
-        total_bulk = sum(r.bulk_count for r in result.sender_counts)
-        bulk_percent = (
-            (total_bulk / result.total_messages * 100)
-            if result.total_messages > 0
-            else 0
-        )
-        mb_used = result.total_attachment_bytes / (1024 * 1024)
-
-        health_score = 100
-        health_score -= min(50, int(bulk_percent))  # Up to 50 point deduction for bulk
-        health_score -= min(
-            30, int(mb_used / 100)
-        )  # Up to 30 point deduction for heavy attachments (>3GB)
-
-        top_category = "None"
-        if result.category_counts:
-            # Filter out Uncategorized for the top stat if there are other categories
-            known_cats = {
-                k: v for k, v in result.category_counts.items() if k != "Uncategorized"
-            }
-            if known_cats:
-                top_category = max(known_cats, key=known_cats.get)
-
-        summary_text = (
-            f"Health Score: {health_score}/100 | "
-            f"Total Messages: {result.total_messages:,} | "
-            f"Likely Bulk: {bulk_percent:.1f}% | "
-            f"Attachments: {mb_used:.1f} MB | "
-            f"Top Category: {top_category}"
-        )
-        self.summary_label.config(text=summary_text)
-
-        # Filter and sort data
-        records_to_display = result.sender_counts
-
-        if self.inactive_only.get():
-            one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
-            filtered_records = []
-            for r in records_to_display:
-                if r.last_email_date is None:
-                    filtered_records.append(r)
-                else:
-                    date_to_compare = r.last_email_date
-                    if date_to_compare.tzinfo is None:
-                        date_to_compare = date_to_compare.replace(tzinfo=timezone.utc)
-                    if date_to_compare < one_year_ago:
-                        filtered_records.append(r)
-            records_to_display = filtered_records
-
-        if search_kw:
-            keyword = search_kw.lower()
-            records_to_display = [
-                r
-                for r in records_to_display
-                if keyword in r.sender_email.lower() or keyword in r.sender_name.lower()
-            ]
-
-        records_to_display = records_to_display[:top_n]
-
-        # Populate treeview
-        for record in records_to_display:
-            name = record.sender_name or ""
-            date_str = (
-                record.last_email_date.strftime("%Y-%m-%d")
-                if record.last_email_date
-                else "Unknown"
-            )
-            self.tree.insert(
-                "",
-                tk.END,
-                values=(
-                    name,
-                    record.sender_email,
-                    record.count,
-                    record.bulk_count,
-                    date_str,
-                    record.category,
-                ),
-            )
-
+        self.text_area.delete(1.0, tk.END)
+        self.text_area.insert(tk.END, output)
         self.run_button.config(state=tk.NORMAL)
         self.export_button.config(state=tk.NORMAL)
-        self.generate_search_button.config(state=tk.NORMAL)
-
-    def generate_search_for_selected(self):
-        selected_items = self.tree.selection()
-        if not selected_items:
-            messagebox.showinfo(
-                "Selection Required",
-                "Please select one or more senders from the list to generate a search string.",
-            )
-            return
-
-        search_parts = []
-        for item in selected_items:
-            # The values are (name, email, count, bulk)
-            # We want the email
-            email = self.tree.item(item, "values")[1]
-            if email:
-                search_parts.append(f"from:{email}")
-
-        if not search_parts:
-            return
-
-        search_string = " OR ".join(search_parts)
-
-        # Show in a popup
-        popup = tk.Toplevel(self.root)
-        popup.title("Gmail Search Query")
-        popup.geometry("600x200")
-
-        ttk.Label(
-            popup,
-            text="Copy and paste the following string into Gmail's search bar:",
-            padding=10,
-        ).pack(fill=tk.X)
-
-        search_text = tk.Text(popup, wrap=tk.WORD, height=5, font=("Consolas", 10))
-        search_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        search_text.insert(tk.END, search_string)
-        search_text.config(state=tk.DISABLED)  # Make it read-only
-
-        # Select all text automatically for easy copying
-        search_text.tag_add("sel", "1.0", tk.END)
-        search_text.focus_set()
 
     def export_filters(self):
         if not self.last_analysis_result:

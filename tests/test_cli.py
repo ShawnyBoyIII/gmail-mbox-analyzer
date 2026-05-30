@@ -79,20 +79,17 @@ class CliTests(unittest.TestCase):
     def test_parse_date_valid(self):
         from src.gmail_mbox_analyzer.cli import parse_date
         from datetime import datetime
-
         dt = parse_date("2023-01-01")
         self.assertEqual(dt, datetime(2023, 1, 1))
 
     def test_parse_date_invalid(self):
         from src.gmail_mbox_analyzer.cli import parse_date
         import argparse
-
         with self.assertRaises(argparse.ArgumentTypeError):
             parse_date("01-01-2023")
 
     def test_build_parser_defaults(self):
         from src.gmail_mbox_analyzer.cli import build_parser
-
         parser = build_parser()
         args = parser.parse_args(["my_inbox.mbox"])
 
@@ -109,29 +106,19 @@ class CliTests(unittest.TestCase):
     def test_build_parser_all_args(self):
         from src.gmail_mbox_analyzer.cli import build_parser
         from datetime import datetime
-
         parser = build_parser()
-        args = parser.parse_args(
-            [
-                "my_inbox.mbox",
-                "--top",
-                "50",
-                "--bulk-only",
-                "--exclude-domain",
-                "example.com",
-                "--exclude-domain",
-                "test.com",
-                "--output-dir",
-                "/tmp/output",  # nosec B108
-                "--start-date",
-                "2023-01-01",
-                "--end-date",
-                "2023-12-31",
-                "--search",
-                "uber",
-                "--interactive",
-            ]
-        )
+        args = parser.parse_args([
+            "my_inbox.mbox",
+            "--top", "50",
+            "--bulk-only",
+            "--exclude-domain", "example.com",
+            "--exclude-domain", "test.com",
+            "--output-dir", "/tmp/output",  # nosec B108
+            "--start-date", "2023-01-01",
+            "--end-date", "2023-12-31",
+            "--search", "uber",
+            "--interactive"
+        ])
 
         self.assertEqual(args.mbox_path, "my_inbox.mbox")
         self.assertEqual(args.top, 50)
