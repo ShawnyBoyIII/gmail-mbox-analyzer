@@ -1,4 +1,6 @@
 from typing import List, Literal
+import xml.etree.ElementTree as ET # nosec B405
+import defusedxml.minidom as Dminidom
 import xml.etree.ElementTree as ET  # nosec B405 Required to build the tree
 from defusedxml.minidom import parseString
 
