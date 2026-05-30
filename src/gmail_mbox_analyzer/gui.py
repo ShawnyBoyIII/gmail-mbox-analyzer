@@ -123,7 +123,7 @@ class AnalyzerGUI:
         )
         self.text_area.configure(yscrollcommand=scrollbar.set)
 
-        self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def browse_file(self):
@@ -262,8 +262,7 @@ class AnalyzerGUI:
             messagebox.showerror("Error", f"Failed to save filters:\n{str(e)}")
 
     def display_error(self, error_msg: str):
-        self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, f"An error occurred:\n{error_msg}")
+        messagebox.showerror("Error", f"An error occurred:\n{error_msg}")
         self.run_button.config(state=tk.NORMAL)
 
 
