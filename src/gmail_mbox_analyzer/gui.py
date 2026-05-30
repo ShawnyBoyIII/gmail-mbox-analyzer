@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from .analyzer import analyze_mbox
 from .cli import render_summary, render_search_summary
@@ -161,6 +161,7 @@ class AnalyzerGUI:
             end_date = self.parse_date_str(self.end_date.get())
         except ValueError as e:
             messagebox.showerror("Error", str(e))
+            self.summary_label.config(text="Analysis failed.")
             self.run_button.config(state=tk.NORMAL)
             return
 

@@ -124,6 +124,64 @@ class AnalyzerTests(unittest.TestCase):
 
         self.assertEqual(result.sender_counts[0].sender_email, "sender@example.com")
 
+    def test_last_email_date_and_category(self) -> None:
+        mbox_path = self.create_mbox(
+            [
+                build_message(
+                    "Amazon <orders@amazon.com>",
+                    "Order Shipped",
+                    Date="Mon, 01 Jan 2023 10:00:00 -0500",
+                ),
+                build_message(
+                    "Amazon <orders@amazon.com>",
+                    "Order Delivered",
+                    Date="Wed, 15 Feb 2023 12:00:00 +0000",
+                ),
+                build_message(
+                    "Newsletter <hello@substack.com>",
+                    "Weekly update",
+                    Date="Fri, 01 Dec 2023 14:00:00 +0000",
+                ),
+                build_message(
+                    "Friend <pal@gmail.com>",
+                    "No Date",
+                ),
+            ]
+        )
+
+        result = analyze_mbox(mbox_path)
+
+        amazon_record = next(
+            r for r in result.sender_counts if r.sender_email == "orders@amazon.com"
+        )
+        substack_record = next(
+            r for r in result.sender_counts if r.sender_email == "hello@substack.com"
+        )
+        friend_record = next(
+            r for r in result.sender_counts if r.sender_email == "pal@gmail.com"
+        )
+
+        # Verify date extracted correctly and latest date chosen for amazon
+        self.assertEqual(
+            amazon_record.last_email_date,
+            datetime(2023, 2, 15, 12, 0, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            substack_record.last_email_date,
+            datetime(2023, 12, 1, 14, 0, tzinfo=timezone.utc),
+        )
+        self.assertIsNone(friend_record.last_email_date)
+
+        # Verify categorizations
+        self.assertEqual(amazon_record.category, "Shopping")
+        self.assertEqual(substack_record.category, "News")
+        self.assertEqual(friend_record.category, "Uncategorized")
+
+        # Verify AnalysisResult category counts
+        self.assertEqual(result.category_counts.get("Shopping"), 2)
+        self.assertEqual(result.category_counts.get("News"), 1)
+        self.assertEqual(result.category_counts.get("Uncategorized"), 1)
+
     def test_date_range_filtering(self) -> None:
         mbox_path = self.create_mbox(
             [
