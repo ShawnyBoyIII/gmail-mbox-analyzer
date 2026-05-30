@@ -4,14 +4,13 @@ import threading
 from datetime import datetime
 
 from .analyzer import analyze_mbox
-from .cli import render_summary, render_search_summary
 from .filter_exporter import generate_gmail_filters_xml
 
 
 class AnalyzerGUI:
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Gmail Storage Cleaner")
+        self.root.title("Gmail MBOX Analyzer")
         self.root.geometry("800x600")
 
         self.mbox_path = tk.StringVar()
@@ -113,17 +112,43 @@ class AnalyzerGUI:
         )
         self.export_button.pack(side=tk.LEFT, padx=10)
 
+        self.generate_search_button = ttk.Button(
+            export_frame,
+            text="Generate Search for Selected",
+            command=self.generate_search_for_selected,
+            state=tk.DISABLED,
+        )
+        self.generate_search_button.pack(side=tk.LEFT, padx=10)
+
         # Bottom Frame for output
         output_frame = ttk.Frame(self.root, padding="10")
         output_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.text_area = tk.Text(output_frame, wrap=tk.WORD, font=("Consolas", 10))
-        scrollbar = ttk.Scrollbar(
-            output_frame, orient=tk.VERTICAL, command=self.text_area.yview
+        # Create Treeview
+        columns = ("name", "email", "count", "bulk")
+        self.tree = ttk.Treeview(
+            output_frame, columns=columns, show="headings", selectmode="extended"
         )
-        self.text_area.configure(yscrollcommand=scrollbar.set)
 
-        self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # Define headings
+        self.tree.heading("name", text="Sender Name")
+        self.tree.heading("email", text="Email Address")
+        self.tree.heading("count", text="Message Count")
+        self.tree.heading("bulk", text="Likely Bulk")
+
+        # Define columns
+        self.tree.column("name", width=150, anchor=tk.W)
+        self.tree.column("email", width=200, anchor=tk.W)
+        self.tree.column("count", width=100, anchor=tk.E)
+        self.tree.column("bulk", width=100, anchor=tk.E)
+
+        # Scrollbar for Treeview
+        scrollbar = ttk.Scrollbar(
+            output_frame, orient=tk.VERTICAL, command=self.tree.yview
+        )
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def browse_file(self):
@@ -150,10 +175,8 @@ class AnalyzerGUI:
             return
 
         self.run_button.config(state=tk.DISABLED)
-        self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(
-            tk.END, "Analyzing... This may take a few minutes for large files.\n"
-        )
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
         # Parse inputs
         try:
@@ -211,21 +234,82 @@ class AnalyzerGUI:
                 end_date=end_date,
             )
 
-            if search_kw:
-                output = render_search_summary(result, search_kw)
-            else:
-                output = render_summary(result, top_n)
-
-            self.root.after(0, self.display_results, result, output)
+            self.root.after(0, self.display_results, result, top_n, search_kw)
         except Exception as e:
             self.root.after(0, self.display_error, str(e))
 
-    def display_results(self, result, output: str):
+    def display_results(self, result, top_n: int, search_kw: str):
         self.last_analysis_result = result
-        self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, output)
+
+        # Clear existing items
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+        # Filter and sort data if search_kw is provided, else use default sender_counts
+        if search_kw:
+            keyword = search_kw.lower()
+            records_to_display = [
+                r
+                for r in result.sender_counts
+                if keyword in r.sender_email.lower() or keyword in r.sender_name.lower()
+            ][:top_n]
+        else:
+            records_to_display = result.sender_counts[:top_n]
+
+        # Populate treeview
+        for record in records_to_display:
+            name = record.sender_name or ""
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(name, record.sender_email, record.count, record.bulk_count),
+            )
+
         self.run_button.config(state=tk.NORMAL)
         self.export_button.config(state=tk.NORMAL)
+        self.generate_search_button.config(state=tk.NORMAL)
+
+    def generate_search_for_selected(self):
+        selected_items = self.tree.selection()
+        if not selected_items:
+            messagebox.showinfo(
+                "Selection Required",
+                "Please select one or more senders from the list to generate a search string.",
+            )
+            return
+
+        search_parts = []
+        for item in selected_items:
+            # The values are (name, email, count, bulk)
+            # We want the email
+            email = self.tree.item(item, "values")[1]
+            if email:
+                search_parts.append(f"from:{email}")
+
+        if not search_parts:
+            return
+
+        search_string = " OR ".join(search_parts)
+
+        # Show in a popup
+        popup = tk.Toplevel(self.root)
+        popup.title("Gmail Search Query")
+        popup.geometry("600x200")
+
+        ttk.Label(
+            popup,
+            text="Copy and paste the following string into Gmail's search bar:",
+            padding=10,
+        ).pack(fill=tk.X)
+
+        search_text = tk.Text(popup, wrap=tk.WORD, height=5, font=("Consolas", 10))
+        search_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        search_text.insert(tk.END, search_string)
+        search_text.config(state=tk.DISABLED)  # Make it read-only
+
+        # Select all text automatically for easy copying
+        search_text.tag_add("sel", "1.0", tk.END)
+        search_text.focus_set()
 
     def export_filters(self):
         if not self.last_analysis_result:
@@ -262,8 +346,7 @@ class AnalyzerGUI:
             messagebox.showerror("Error", f"Failed to save filters:\n{str(e)}")
 
     def display_error(self, error_msg: str):
-        self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, f"An error occurred:\n{error_msg}")
+        messagebox.showerror("Error", f"An error occurred:\n{error_msg}")
         self.run_button.config(state=tk.NORMAL)
 
 

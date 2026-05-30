@@ -1,4 +1,4 @@
-# Gmail Storage Cleaner
+# Gmail MBOX Analyzer
 
 Find the senders taking up the most space in your Gmail export so you can clean up your inbox faster.
 
@@ -73,8 +73,8 @@ The included `.gitignore` is configured to block those files by default.
 
 ## Project Layout
 
-- `src/gmail_storage_cleaner/analyzer.py`: mailbox parsing and aggregation
-- `src/gmail_storage_cleaner/cli.py`: command-line entry point
+- `src/gmail_mbox_analyzer/analyzer.py`: mailbox parsing and aggregation
+- `src/gmail_mbox_analyzer/cli.py`: command-line entry point
 - `tests/test_analyzer.py`: regression tests
 
 ## Gmail Export Path
@@ -91,13 +91,13 @@ The easiest way to get a bulk Gmail mailbox in MBOX format is usually Google Tak
 From this project folder:
 
 ```bash
-python3 -m src.gmail_storage_cleaner.cli /path/to/All\ mail\ Including\ Spam\ and\ Trash.mbox
+python3 -m src.gmail_mbox_analyzer.cli /path/to/All\ mail\ Including\ Spam\ and\ Trash.mbox
 ```
 
 You can also write CSV outputs:
 
 ```bash
-python3 -m src.gmail_storage_cleaner.cli /path/to/mail.mbox --output-dir ./reports
+python3 -m src.gmail_mbox_analyzer.cli /path/to/mail.mbox --output-dir ./reports
 ```
 
 ## Useful Options
@@ -105,19 +105,19 @@ python3 -m src.gmail_storage_cleaner.cli /path/to/mail.mbox --output-dir ./repor
 Show only likely bulk senders:
 
 ```bash
-python3 -m src.gmail_storage_cleaner.cli /path/to/mail.mbox --bulk-only
+python3 -m src.gmail_mbox_analyzer.cli /path/to/mail.mbox --bulk-only
 ```
 
 Show the top 50 senders:
 
 ```bash
-python3 -m src.gmail_storage_cleaner.cli /path/to/mail.mbox --top 50
+python3 -m src.gmail_mbox_analyzer.cli /path/to/mail.mbox --top 50
 ```
 
 Ignore one or more sender domains:
 
 ```bash
-python3 -m src.gmail_storage_cleaner.cli /path/to/mail.mbox --exclude-domain gmail.com --exclude-domain google.com
+python3 -m src.gmail_mbox_analyzer.cli /path/to/mail.mbox --exclude-domain gmail.com --exclude-domain google.com
 ```
 
 ## CSV Outputs

@@ -8,7 +8,7 @@ from email.header import Header
 from email.message import EmailMessage
 from pathlib import Path
 
-from src.gmail_storage_cleaner.analyzer import analyze_mbox, write_csv_reports
+from src.gmail_mbox_analyzer.analyzer import analyze_mbox, write_csv_reports
 
 
 def build_message(sender: str, subject: str, **headers: str) -> EmailMessage:
