@@ -135,6 +135,10 @@ class AnalyzerGUI:
         )
         self.summary_label.pack(side=tk.LEFT)
 
+        self.progress_bar = ttk.Progressbar(
+            self.summary_frame, mode="indeterminate", length=150
+        )
+
         # Bottom Frame for output
         output_frame = ttk.Frame(self.root, padding="10")
         output_frame.pack(fill=tk.BOTH, expand=True)
@@ -170,6 +174,10 @@ class AnalyzerGUI:
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # Bind events
+        self.tree.bind("<Double-1>", lambda e: self.generate_search_for_selected())
+        self.tree.bind("<Return>", lambda e: self.generate_search_for_selected())
+
     def browse_file(self):
         path = filedialog.askopenfilename(
             title="Select MBOX File",
@@ -201,6 +209,8 @@ class AnalyzerGUI:
         self.summary_label.config(
             text="Analyzing... This may take a few minutes for large files."
         )
+        self.progress_bar.pack(side=tk.LEFT, padx=10)
+        self.progress_bar.start(10)
 
         # Parse inputs
         try:
@@ -264,6 +274,9 @@ class AnalyzerGUI:
             self.root.after(0, self.display_error, str(e))
 
     def display_results(self, result, top_n: int, search_kw: str):
+        self.progress_bar.stop()
+        self.progress_bar.pack_forget()
+
         self.last_analysis_result = result
 
         # Clear existing items
@@ -432,6 +445,8 @@ class AnalyzerGUI:
             messagebox.showerror("Error", f"Failed to save filters:\n{str(e)}")
 
     def display_error(self, error_msg: str):
+        self.progress_bar.stop()
+        self.progress_bar.pack_forget()
         messagebox.showerror("Error", f"An error occurred:\n{error_msg}")
         self.run_button.config(state=tk.NORMAL)
 
