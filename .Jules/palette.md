@@ -1,0 +1,3 @@
+## 2024-06-05 - Indeterminate Progress Indicators for Async GUI Tasks
+**Learning:** During long-running synchronous or asynchronous tasks in desktop GUIs (like Tkinter), users are often left without feedback that a background process is ongoing. Without visual cues, they may think the application has frozen.
+**Action:** Always provide explicit visual feedback when blocking operations are offloaded to background threads. Use an indeterminate progress bar (`ttk.Progressbar(mode="indeterminate")`), change button text to reflect the running state (e.g., "Analyzing..."), and change the cursor to "wait". Ensure these elements are cleanly restored (`pack_forget`, resetting text and cursor) when the thread completes or throws an error.

@@ -135,6 +135,11 @@ class AnalyzerGUI:
         )
         self.summary_label.pack(side=tk.LEFT)
 
+        self.progress_bar = ttk.Progressbar(
+            self.summary_frame, mode="indeterminate", length=200
+        )
+        # We will pack this dynamically when analysis starts
+
         # Bottom Frame for output
         output_frame = ttk.Frame(self.root, padding="10")
         output_frame.pack(fill=tk.BOTH, expand=True)
@@ -193,7 +198,11 @@ class AnalyzerGUI:
             messagebox.showerror("Error", "Please select an MBOX file.")
             return
 
-        self.run_button.config(state=tk.DISABLED)
+        self.run_button.config(state=tk.DISABLED, text="Analyzing...")
+        self.root.config(cursor="wait")
+        self.progress_bar.pack(side=tk.RIGHT, padx=10)
+        self.progress_bar.start(10)
+
         for item in self.tree.get_children():
             self.tree.delete(item)
 
@@ -209,7 +218,10 @@ class AnalyzerGUI:
         except ValueError as e:
             messagebox.showerror("Error", str(e))
             self.summary_label.config(text="Analysis failed.")
-            self.run_button.config(state=tk.NORMAL)
+            self.run_button.config(state=tk.NORMAL, text="Run Analysis")
+            self.root.config(cursor="")
+            self.progress_bar.stop()
+            self.progress_bar.pack_forget()
             return
 
         exclude_str = self.exclude_domains.get().strip()
@@ -264,6 +276,11 @@ class AnalyzerGUI:
             self.root.after(0, self.display_error, str(e))
 
     def display_results(self, result, top_n: int, search_kw: str):
+        self.run_button.config(text="Run Analysis")
+        self.root.config(cursor="")
+        self.progress_bar.stop()
+        self.progress_bar.pack_forget()
+
         self.last_analysis_result = result
 
         # Clear existing items
@@ -432,8 +449,12 @@ class AnalyzerGUI:
             messagebox.showerror("Error", f"Failed to save filters:\n{str(e)}")
 
     def display_error(self, error_msg: str):
+        self.run_button.config(state=tk.NORMAL, text="Run Analysis")
+        self.root.config(cursor="")
+        self.progress_bar.stop()
+        self.progress_bar.pack_forget()
+        self.summary_label.config(text="Analysis failed.")
         messagebox.showerror("Error", f"An error occurred:\n{error_msg}")
-        self.run_button.config(state=tk.NORMAL)
 
 
 def launch_gui():
