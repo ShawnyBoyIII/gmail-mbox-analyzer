@@ -397,6 +397,23 @@ class AnalyzerGUI:
         search_text.tag_add("sel", "1.0", tk.END)
         search_text.focus_set()
 
+        # UX Enhancement: Add a one-click copy button
+        def copy_to_clipboard():
+            popup.clipboard_clear()
+            popup.clipboard_append(search_string)
+            popup.update()  # Keeps the clipboard updated
+            copy_button.config(text="✓ Copied!")
+            # Automatically close the popup after a brief delay (e.g. 1500 ms)
+            popup.after(1500, popup.destroy)
+
+        button_frame = ttk.Frame(popup)
+        button_frame.pack(fill=tk.X, pady=5, padx=10)
+
+        copy_button = ttk.Button(
+            button_frame, text="Copy to Clipboard", command=copy_to_clipboard
+        )
+        copy_button.pack(side=tk.RIGHT)
+
     def export_filters(self):
         if not self.last_analysis_result:
             return
