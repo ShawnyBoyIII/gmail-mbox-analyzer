@@ -397,6 +397,23 @@ class AnalyzerGUI:
         search_text.tag_add("sel", "1.0", tk.END)
         search_text.focus_set()
 
+        def copy_to_clipboard():
+            self.root.clipboard_clear()
+            self.root.clipboard_append(search_string)
+            self.root.update()
+            copy_btn.config(text="Copied! ✓")
+
+            def reset_text():
+                if copy_btn.winfo_exists():
+                    copy_btn.config(text="Copy to Clipboard")
+
+            popup.after(2000, reset_text)
+
+        copy_btn = ttk.Button(
+            popup, text="Copy to Clipboard", command=copy_to_clipboard
+        )
+        copy_btn.pack(pady=10)
+
     def export_filters(self):
         if not self.last_analysis_result:
             return
