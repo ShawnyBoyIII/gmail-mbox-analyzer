@@ -380,7 +380,7 @@ class AnalyzerGUI:
         # Show in a popup
         popup = tk.Toplevel(self.root)
         popup.title("Gmail Search Query")
-        popup.geometry("600x200")
+        popup.geometry("600x250")
 
         ttk.Label(
             popup,
@@ -396,6 +396,26 @@ class AnalyzerGUI:
         # Select all text automatically for easy copying
         search_text.tag_add("sel", "1.0", tk.END)
         search_text.focus_set()
+
+        def copy_to_clipboard():
+            self.root.clipboard_clear()
+            self.root.clipboard_append(search_string)
+            self.root.update()  # Required to finalize clipboard content on some systems
+            copy_button.config(text="Copied!")
+
+            def revert_text():
+                if copy_button.winfo_exists():
+                    copy_button.config(text="Copy to Clipboard")
+
+            self.root.after(2000, revert_text)
+
+        button_frame = ttk.Frame(popup)
+        button_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+
+        copy_button = ttk.Button(
+            button_frame, text="Copy to Clipboard", command=copy_to_clipboard
+        )
+        copy_button.pack(side=tk.RIGHT)
 
     def export_filters(self):
         if not self.last_analysis_result:
