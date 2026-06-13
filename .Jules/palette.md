@@ -1,0 +1,3 @@
+## 2025-05-18 - Explicit Copy Buttons Reduce Friction
+**Learning:** We observed that providing an explicit 'Copy to Clipboard' button with temporary visual confirmation ("Copied!") significantly reduces interaction friction compared to implicit text selection (even if automatically highlighted), especially for generated strings like search queries.
+**Action:** Always include a dedicated, visual copy button with feedback for generated, copy-pasteable content instead of relying purely on auto-selection of read-only text areas. Ensure `after` callbacks check `winfo_exists()` to avoid errors.
